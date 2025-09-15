@@ -1,4 +1,5 @@
 import numpy as np
+from ActivationFunctions import *
 
 class Layer:
     def __init__(self, input_size, output_size):
@@ -12,7 +13,7 @@ class Layer:
         Forward pass for 1 layer
         :return: Sets outputs to the result of calculating the forward pass, which is the multiplication of the weight matrix and input vectors in that order
         """
-        self.outputs = self.weights.dot(self.inputs)
+        self.outputs = stepFunc(self.weights.dot(self.inputs) + self.biases)
 
     def set_inputs(self, inputs):
         """
@@ -33,7 +34,12 @@ class Layer:
         :param weights: The weights to be inputted
         :return: None. Sets the new values
         """
-        self.weights = weights
+        if isinstance(weights, np.ndarray):
+            self.weights = weights
+        elif isinstance(weights, list):
+            self.weights = np.array(weights)
+        else:
+            raise TypeError('Input must be a numpy array or a list')
 
     def set_biases(self, biases):
         """
@@ -41,22 +47,41 @@ class Layer:
         :param biases: Biases to be inputted
         :return: None. Sets the new values
         """
-        self.biases = biases
+        if isinstance(biases, np.ndarray):
+            self.biases = biases
+        elif isinstance(biases, list):
+            self.biases = np.array(biases)
+        else:
+            raise TypeError('Input must be a numpy array or a list')
 
 
 class Network:
-    def __init__(self, input_size, output_size, hidden_layer_count, hidden_layer_size, inputs):
+    def __init__(
+            self,
+            input_size,
+            output_size,
+            hidden_layer_count,
+            hidden_layer_size,
+            inputs,
+
+            output_layer=None, # Primarily for testing
+    ):
         if hidden_layer_count == 0:
             hidden_layer_size = output_size
         self.input_layer = Layer(input_size, hidden_layer_size)
         self.input_layer.set_inputs(inputs)
         self.hidden_layers = [Layer(hidden_layer_size, hidden_layer_size) for i in range(hidden_layer_count)]
-        self.output_layer = Layer(hidden_layer_size, output_size)
+        self.output_layer = Layer(hidden_layer_size, output_size) if output_layer else output_layer
 
     def forward(self):
+        """
+        Forward pass for the network
+        :return: None. It calculates the output of the network with the given inputs
+        """
+        # The first forward pass process will always be for the input layer
         self.input_layer.forward()
-
         if len(self.hidden_layers) > 0:
+            # If there are hidden layers at all, we continue the forward pass along those
             self.hidden_layers[0].set_inputs(self.input_layer.outputs)
             layer = 1
             for layer in range(1, len(self.hidden_layers) - 1):
@@ -66,12 +91,17 @@ class Network:
             self.hidden_layers[layer].forward()
             self.output_layer.set_inputs(self.hidden_layers[layer].outputs)
         else:
+            # If not, the outputs of the input layer are passed to the output layer which calculates the final forward pass
             self.output_layer.set_inputs(self.input_layer.outputs)
+            self.output_layer.forward()
 
     def show_output(self):
-            print('Final output : ', list(self.output_layer.outputs))
+        """
+        Shows the final output of the entire network's calculations
+        :return: Prints the output layer's outputs
+        """
+        print('Final output : ', list(self.output_layer.outputs))
 
 if __name__ == '__main__':
-    test = Network(3, 4, 0, 0, np.matrix(np.random.rand(3, 1)))
-    test.forward()
-    print(test.show_output())
+
+    print(test.outputs)
