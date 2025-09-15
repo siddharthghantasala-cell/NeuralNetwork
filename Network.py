@@ -80,22 +80,12 @@ class Network:
         Forward pass for the network
         :return: None. It calculates the output of the network with the given inputs
         """
-        # The first forward pass process will always be for the input layer
-        self.input_layer.forward()
-        if len(self.hidden_layers) > 0:
-            # If there are hidden layers at all, we continue the forward pass along those
-            self.hidden_layers[0].set_inputs(self.input_layer.outputs)
-            layer = 1
-            for layer in range(1, len(self.hidden_layers) - 1):
-                self.hidden_layers[layer].forward()
-                self.hidden_layers[layer + 1].set_inputs(self.hidden_layers[layer].outputs)
-
-            # self.hidden_layers[layer].forward()
-            self.output_layer.set_inputs(self.hidden_layers[layer-1].outputs)
-        else:
-            # If not, the outputs of the input layer are passed to the output layer which calculates the final forward pass
-            self.output_layer.set_inputs(self.input_layer.outputs)
-            # self.output_layer.forward()
+        layers = [self.input_layer] + self.hidden_layers + [self.output_layer]
+        for i in range(0,len(layers) - 1):
+            # Basically feed forward of the first layer, then put those outputs as in the inputs of the next layer
+            layers[i].forward()
+            layers[i+1].set_inputs(layers[i].outputs)
+        self.output_layer.forward()
 
     def show_output(self):
         """
