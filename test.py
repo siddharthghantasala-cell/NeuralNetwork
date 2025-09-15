@@ -1,2 +1,5 @@
 import numpy as np
-print(np.matrix(np.random.rand(2, 3)))
+from ActivationFunctions import *
+arr = np.array([-1, 2, -3, 4, 5, -6])
+modified_step = np.vectorize(stepFunc)
+print(modified_step(arr))

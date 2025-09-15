@@ -1,15 +1,12 @@
 import numpy as np
 
 
-def stepFunc(input : int):
-    if input < 0:
-        return 0
-    else:
-        return 1
+def stepFunc(x):
+    return np.where(x < 0, 0, 1)
 
 
-def sigmoid(input : int):
-    return 1.0/(1.0 + np.exp(-input))
+def sigmoid(x):
+    return 1.0/(1.0 + np.exp(-x))
 
-def relu(input : int):
-    return input if input > 0 else 0
+def relu(x):
+    return x if x > 0 else 0

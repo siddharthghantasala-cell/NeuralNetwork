@@ -13,7 +13,8 @@ class Layer:
         Forward pass for 1 layer
         :return: Sets outputs to the result of calculating the forward pass, which is the multiplication of the weight matrix and input vectors in that order
         """
-        self.outputs = stepFunc(self.weights.dot(self.inputs) + self.biases)
+        self.outputs = self.weights.dot(self.inputs) + self.biases
+        self.outputs = stepFunc(self.outputs)
 
     def set_inputs(self, inputs):
         """
@@ -64,14 +65,15 @@ class Network:
             hidden_layer_size,
             inputs,
 
+            hidden_layer, # Primarily for testing
             output_layer=None, # Primarily for testing
     ):
         if hidden_layer_count == 0:
             hidden_layer_size = output_size
         self.input_layer = Layer(input_size, hidden_layer_size)
         self.input_layer.set_inputs(inputs)
-        self.hidden_layers = [Layer(hidden_layer_size, hidden_layer_size) for i in range(hidden_layer_count)]
-        self.output_layer = Layer(hidden_layer_size, output_size) if output_layer else output_layer
+        self.hidden_layers = [Layer(hidden_layer_size, hidden_layer_size) for i in range(hidden_layer_count)] if not hidden_layer else hidden_layer
+        self.output_layer = Layer(hidden_layer_size, output_size) if not output_layer else output_layer
 
     def forward(self):
         """
@@ -86,14 +88,14 @@ class Network:
             layer = 1
             for layer in range(1, len(self.hidden_layers) - 1):
                 self.hidden_layers[layer].forward()
-                self.hidden_layers[layer + 1] = self.hidden_layers[layer].outputs
+                self.hidden_layers[layer + 1].set_inputs(self.hidden_layers[layer].outputs)
 
-            self.hidden_layers[layer].forward()
-            self.output_layer.set_inputs(self.hidden_layers[layer].outputs)
+            # self.hidden_layers[layer].forward()
+            self.output_layer.set_inputs(self.hidden_layers[layer-1].outputs)
         else:
             # If not, the outputs of the input layer are passed to the output layer which calculates the final forward pass
             self.output_layer.set_inputs(self.input_layer.outputs)
-            self.output_layer.forward()
+            # self.output_layer.forward()
 
     def show_output(self):
         """
@@ -103,5 +105,9 @@ class Network:
         print('Final output : ', list(self.output_layer.outputs))
 
 if __name__ == '__main__':
-
-    print(test.outputs)
+    inputs = np.random.randn(2,1)
+    hidden_layer = Layer(3, 2)
+    hidden_layer.set_weights(np.ones((2,3)))
+    test = Network(2,3,1,3, inputs, [hidden_layer])
+    test.forward()
+    test.show_output()
