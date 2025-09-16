@@ -102,6 +102,16 @@ class Network:
 
 if __name__ == '__main__':
     inputs = np.ones((2, 1))
-    test = Network(2,2,1,3, inputs)
-    test.forward()
-    test.show_output()
+    network = Network(2, 2, 1, 3, inputs)
+    network.forward()
+    network.show_output()
+
+
+# Ideas :
+"1"
+"""
+Idea for modifiable layer sizes : Get a list the length of which is the number of all the hidden layers where each index corresponds to each hidden layer in order. 
+The indexes of the list will contain an integer depicting the number of neurons in that layer
+"""
+"2"
+...
