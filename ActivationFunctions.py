@@ -9,4 +9,4 @@ def sigmoid(x):
     return 1.0/(1.0 + np.exp(-x))
 
 def relu(x):
-    return x if x > 0 else 0
+    return np.where(x > 0, x, 0)
