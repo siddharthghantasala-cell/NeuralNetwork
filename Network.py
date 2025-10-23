@@ -55,6 +55,24 @@ class Layer:
         else:
             raise TypeError('Input must be a numpy array or a list')
 
+    def gradient_descent(self, partial_loss : np.ndarray, learning_rate : float):
+        """
+        Finds the gradient descent for each column of weights and changes the weights
+        """
+
+        # Gradient de/dw = -xi(y-y^)
+        # partial_loss = -(y-y^) <- vector
+        # We need to go through the weights matrix and modify each layer based on the appropriate value in the partial_loss
+
+        weight_columns = np.hsplit(self.weights, self.weights.shape[1])
+        i = 0
+        for column in weight_columns: # There should be n columns
+            column -= learning_rate*(partial_loss[i].item()*self.inputs[i].item()) # self.inputs is an nx1 matrix
+            i+=1
+
+        error = "calculated error somehow"
+        return error
+
 
 class Network:
     def __init__(
