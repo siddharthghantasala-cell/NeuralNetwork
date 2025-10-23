@@ -1,4 +1,3 @@
-import numpy as np
 from ActivationFunctions import *
 
 class Layer:
@@ -69,17 +68,18 @@ class Network:
         if hidden_layer_count == 0:
             hidden_layer_size = output_size
 
-        self.input_layer = Layer(input_size, hidden_layer_size, stepFunc)
+        self.input_layer = Layer(input_size, hidden_layer_size, relu)
         self.input_layer.set_inputs(inputs)
 
-        self.hidden_layers = [Layer(hidden_layer_size, hidden_layer_size, stepFunc) for i in range(hidden_layer_count)]
-        self.output_layer = Layer(hidden_layer_size, output_size, stepFunc)
+        self.hidden_layers = [Layer(hidden_layer_size, hidden_layer_size, relu) for i in range(hidden_layer_count)]
+        self.output_layer = Layer(hidden_layer_size, output_size, relu)
 
         """Hard coding some values for testing purposes"""
-        self.hidden_layers[0].set_weights(np.ones((hidden_layer_size, hidden_layer_size)))
-        self.hidden_layers[0].set_biases(np.ones((3,1)))
-        self.output_layer.set_weights(np.ones((2,3)))
-        self.output_layer.set_biases(np.ones((2,1)))
+        # self.input_layer.set_weights(np.ones((hidden_layer_size, input_size)))
+        # self.hidden_layers[0].set_weights(np.ones((hidden_layer_size, hidden_layer_size)))
+        # self.hidden_layers[0].set_biases(np.ones((3,1)))
+        # self.output_layer.set_weights(np.ones((2,3)))
+        # self.output_layer.set_biases(np.ones((2,1)))
 
     def forward(self):
         """
@@ -101,17 +101,7 @@ class Network:
         print('Final output : ', list(self.output_layer.outputs))
 
 if __name__ == '__main__':
-    inputs = np.ones((2, 1))
+    inputs = np.random.rand(2, 1)
     network = Network(2, 2, 1, 3, inputs)
     network.forward()
     network.show_output()
-
-
-# Ideas :
-"1"
-"""
-Idea for modifiable layer sizes : Get a list the length of which is the number of all the hidden layers where each index corresponds to each hidden layer in order. 
-The indexes of the list will contain an integer depicting the number of neurons in that layer
-"""
-"2"
-...
