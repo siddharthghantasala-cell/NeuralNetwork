@@ -6,15 +6,14 @@ class Layer:
         self.weights = np.matrix(np.random.rand(output_size, input_size)) # Matrix of dimensions mxn (to pre multiply with input vector)
         self.biases = np.matrix(np.random.rand(output_size, 1)) # Vector of dimensions (to add to output vector)
         self.activation = activation
-        self.outputs = None # Output vector
+        self.outputs = None # Output vector of dimensions mx1
 
     def forward(self):
         """
         Forward pass for 1 layer
         :return: Sets outputs to the result of calculating the forward pass, which is the multiplication of the weight matrix and input vectors in that order
         """
-        self.outputs = self.weights.dot(self.inputs) + self.biases
-        self.outputs = self.activation(self.outputs)
+        self.outputs = self.activation(self.weights.dot(self.inputs) + self.biases)
 
     def set_inputs(self, inputs):
         """
@@ -42,6 +41,18 @@ class Layer:
         else:
             raise TypeError('Input must be a numpy array or a list')
 
+
+    """
+    AAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHSDIUFHSDKFESF EOISFH ESOIFBSEIFSI GIWEMOTHWOEPR WEIO 
+    EHF JEW
+    G U'ER'G ER]GO ERIG ERGIPDRKJ 'DRKH
+    RE 
+    TFH 
+    TKH 
+    RTJ KT
+    
+    """
+
     def set_biases(self, biases):
         """
         Purely for testing purposes, in order to get a deterministic output
@@ -61,7 +72,7 @@ class Layer:
         """
 
         # Gradient de/dw = -xi(y-y^)
-        # partial_loss = -(y-y^) <- vector
+        # partial_loss = -(y-y^) <- mx1 vector
         # We need to go through the weights matrix and modify each layer based on the appropriate value in the partial_loss
 
         weight_columns = np.hsplit(self.weights, self.weights.shape[1])
@@ -89,7 +100,7 @@ class Network:
         self.input_layer = Layer(input_size, hidden_layer_size, relu)
         self.input_layer.set_inputs(inputs)
 
-        self.hidden_layers = [Layer(hidden_layer_size, hidden_layer_size, relu) for i in range(hidden_layer_count)]
+        self.hidden_layers = [Layer(hidden_layer_size, hidden_layer_size, relu) for _ in range(hidden_layer_count)]
         self.output_layer = Layer(hidden_layer_size, output_size, relu)
 
         """Hard coding some values for testing purposes"""
@@ -117,6 +128,17 @@ class Network:
         :return: Prints the output layer's outputs
         """
         print('Final output : ', list(self.output_layer.outputs))
+
+    def backprop(self, expected : np.ndarray, learning_rate : float):
+        """
+        Finds the partial derivative of the loss function (assuming to be squared error) and the derivative
+        of the activation function with respect to the linear combination of weights and inputs
+        Global method that starts the cascade of back propagation
+        """
+        partial_loss = -(expected - self.output_layer.outputs)
+        for layer in [self.input_layer] + self.hidden_layers + [self.output_layer].__reversed__():
+            partial_loss = layer.gradient_descent(partial_loss)
+
 
 if __name__ == '__main__':
     inputs = np.random.rand(2, 1)
