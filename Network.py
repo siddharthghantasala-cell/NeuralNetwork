@@ -6,14 +6,16 @@ class Layer:
         self.weights = np.matrix(np.random.rand(output_size, input_size)) # Matrix of dimensions mxn (to pre multiply with input vector)
         self.biases = np.matrix(np.random.rand(output_size, 1)) # Vector of dimensions (to add to output vector)
         self.activation = activation
-        self.outputs = None # Output vector of dimensions mx1
+        self.outputs = [None, None] # Output vector of dimensions mx1 where the first index has the value
+        # after running through activation function and the second index has the value before running through the activaiton function
 
     def forward(self):
         """
         Forward pass for 1 layer
         :return: Sets outputs to the result of calculating the forward pass, which is the multiplication of the weight matrix and input vectors in that order
         """
-        self.outputs = self.activation(self.weights.dot(self.inputs) + self.biases)
+        self.outputs[1] = self.weights.dot(self.inputs) + self.biases
+        self.outputs[0] = self.activation(self.outputs[1])
 
     def set_inputs(self, inputs):
         """
@@ -42,17 +44,6 @@ class Layer:
             raise TypeError('Input must be a numpy array or a list')
 
 
-    """
-    AAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHSDIUFHSDKFESF EOISFH ESOIFBSEIFSI GIWEMOTHWOEPR WEIO 
-    EHF JEW
-    G U'ER'G ER]GO ERIG ERGIPDRKJ 'DRKH
-    RE 
-    TFH 
-    TKH 
-    RTJ KT
-    
-    """
-
     def set_biases(self, biases):
         """
         Purely for testing purposes, in order to get a deterministic output
@@ -66,23 +57,24 @@ class Layer:
         else:
             raise TypeError('Input must be a numpy array or a list')
 
-    def gradient_descent(self, partial_loss : np.ndarray, learning_rate : float):
+    def backpropagation(self, diff, learning_rate):
         """
-        Finds the gradient descent for each column of weights and changes the weights
+        A method used to find the gradient of the weights and biases in the current layer
+        :param diff: The difference between the final output value and the predicted value
+        :return: Finds the final gradient of the loss function
         """
+        # Calculate the linear combination going into the activation function for each output node
+        "Check for the outputs being None"
 
-        # Gradient de/dw = -xi(y-y^)
-        # partial_loss = -(y-y^) <- mx1 vector
-        # We need to go through the weights matrix and modify each layer based on the appropriate value in the partial_loss
+        # Then we differentiate the activation function
+        def d_active(x):
+            return self.activation(x, True)
+        input_value = None
+        update_value = learning_rate * (diff * d_active(self.outputs[1]) * input_value)
 
-        weight_columns = np.hsplit(self.weights, self.weights.shape[1])
-        i = 0
-        for column in weight_columns: # There should be n columns
-            column -= learning_rate*(partial_loss[i].item()*self.inputs[i].item()) # self.inputs is an nx1 matrix
-            i+=1
+        # Updating the weights
+        for i in range(self.weights.shape[1]):
 
-        error = "calculated error somehow"
-        return error
 
 
 class Network:
@@ -129,15 +121,31 @@ class Network:
         """
         print('Final output : ', list(self.output_layer.outputs))
 
-    def backprop(self, expected : np.ndarray, learning_rate : float):
+    def backpropagation(self, d):
         """
-        Finds the partial derivative of the loss function (assuming to be squared error) and the derivative
-        of the activation function with respect to the linear combination of weights and inputs
-        Global method that starts the cascade of back propagation
+        A method used for a single backwards pass using backpropagation
+        :param d: The actual values
+        :return: Sets the weights closer to the correct value for optimal classification
         """
-        partial_loss = -(expected - self.output_layer.outputs)
-        for layer in [self.input_layer] + self.hidden_layers + [self.output_layer].__reversed__():
-            partial_loss = layer.gradient_descent(partial_loss)
+
+        """
+        This process will take place in two steps:
+            1. Doing backpropagation from the outputs
+            2. Doing backpropagation between hidden layers 
+        """
+
+        # Step 1.
+        # First we need to differentiate the loss function which for now we're using mean squared loss
+        # Differentiating it, we simply get the difference between the predicted and actual outputs
+        dL = (self.output_layer.outputs - d)  # dL is the derivative of the loss function
+
+
+
+        # And finally, we differentiate the linear combination of weights and biases going into
+        # the relevant output node
+        # We need to find the linear combination of weights and inputs going into the output node
+        # and then run it through the differentiated activation function
+          # trying it out with a set index for mental imagery purposes
 
 
 if __name__ == '__main__':
