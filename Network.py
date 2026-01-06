@@ -15,8 +15,8 @@ class Layer:
         Forward pass for 1 layer
         :return: Sets outputs to the result of calculating the forward pass, which is the multiplication of the weight matrix and input vectors in that order
         """
-        self.outputs[1] = self.weights.dot(self.inputs) + self.biases
-        self.outputs[0] = self.activation(self.outputs[1])
+        self.outputs[0] = self.weights.dot(self.inputs) + self.biases
+        self.outputs[1] = self.activation(self.outputs[0])
 
     def set_inputs(self, inputs):
         """
@@ -58,10 +58,10 @@ class Layer:
         else:
             raise TypeError('Input must be a numpy array or a list')
 
-    def backprop(self, prev_error, learning_rate):
+    def backprop(self, upstream_gradient,learning_rate):
         """
         A method used to find the gradient of the weights and biases in the output layer
-        :param prev_error: The error propagated from previous layer
+        :param upstream_gradient: The gradient propagated from the previous layer
         :param learning_rate: The learning rate at which the network learns
         :return: Finds the final gradient of the loss function
         """
@@ -80,9 +80,11 @@ class Layer:
         t_weights = self.weights.T
 
         # Error should be the dimensions of the current layer (output layer)
-        # (t_weights @ prev_error) converts prev_error from being a vector with output dimensions to
-        # a vector that has input dimensions
-        error = (t_weights @ prev_error) * d_active(self.outputs[0])
+        # upstream gradient multiplied the previous layer's transposed weights with that layer's error
+        # thereby converting the output dimensions of that layer to it's input dimensions which
+        # also is this layer's output dimensions allowing us to effectively pull the error from the next
+        # layer to this layer and do the Hadamard product
+        error = upstream_gradient * d_active(self.outputs[0])
 
         """
         Updating the weights
@@ -97,7 +99,15 @@ class Layer:
         # Finally update the weights
         self.weights -= dW
 
-        return error
+        """
+        Updating the biases
+        """
+        self.biases -= learning_rate * error
+
+        # Record the next upstream gradient for the next layer
+        new_gradient = t_weights @ error
+
+        return new_gradient
 
 
 class Network:
@@ -168,7 +178,7 @@ class Network:
         First we need to do the backpropagation at the output layer
         """
         # This involves differentiating the cost function (in this case we're using MSE)
-        dL = (d - self.output_layer.outputs[1])
+        dL = (self.output_layer.outputs[1] - d)
 
         # Then differentiating the activation function
         def d_output_active(x):
@@ -185,20 +195,27 @@ class Network:
         self.output_layer.weights -= dW_output
 
         """
+        Updating the biases
+        """
+        self.output_layer.biases -= learning_rate * output_error
+
+        """
         Step 2
         Then we need to propagate the error back through the network using the newly obtained error term
         """
         network = self.network[:-1]
-        next_error = output_error
+        backprop_gradient = self.output_layer.weights.T @ output_error
         # Go through all the layers (except the output layer), find the error and update the weights accordingly
         # using each layer's backprop method
-        for layer in network:
-            next_error = layer.backprop(next_error, learning_rate)
-
+        for layer in reversed(network):
+            backprop_gradient = layer.backprop(
+                upstream_gradient=backprop_gradient,
+                learning_rate=learning_rate
+            )
 
 
 if __name__ == '__main__':
-    input = np.random.rand(2, 1)
-    network = Network(2, 2, 1, 3, input)
+    input = np.random.rand(3, 1)
+    network = Network(3, 3, 1, 4, input)
     network.forward()
     network.show_output()
