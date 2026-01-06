@@ -116,37 +116,31 @@ class Network:
             input_size,
             output_size,
             hidden_layer_count,
-            hidden_layer_size,
-            inputs,
+            hidden_layer_size
     ):
         if hidden_layer_count == 0:
-            hidden_layer_size = output_size
+            hidden_layer_size = input_size
 
-        self.input_layer = Layer(input_size, hidden_layer_size, relu)
-        self.input_layer.set_inputs(inputs)
+        # self.input_layer = Layer(input_size, hidden_layer_size, relu)
+        # self.input_layer.set_inputs(inputs)
 
         self.hidden_layers = [Layer(hidden_layer_size, hidden_layer_size, relu) for _ in range(hidden_layer_count)]
         self.output_layer = Layer(hidden_layer_size, output_size, relu)
 
-        self.network = [self.input_layer] + self.hidden_layers + [self.output_layer]
+        # self.network = [self.input_layer] + self.hidden_layers + [self.output_layer]
+        self.network = self.hidden_layers + [self.output_layer]
+        # self.network[0].set_inputs(inputs)
 
-        """Hard coding some values for testing purposes"""
-        # self.input_layer.set_weights(np.ones((hidden_layer_size, input_size)))
-        # self.hidden_layers[0].set_weights(np.ones((hidden_layer_size, hidden_layer_size)))
-        # self.hidden_layers[0].set_biases(np.ones((3,1)))
-        # self.output_layer.set_weights(np.ones((2,3)))
-        # self.output_layer.set_biases(np.ones((2,1)))
-
-    def forward(self):
+    def forward(self, inputs):
         """
         Forward pass for the network
         :return: None. It calculates the output of the network with the given inputs
         """
-        layers = [self.input_layer] + self.hidden_layers + [self.output_layer]
-        for i in range(0,len(layers) - 1):
+
+        for i in range(0,len(self.network) - 1):
             # Basically feed forward of the first layer, then put those outputs as in the inputs of the next layer
-            layers[i].forward()
-            layers[i+1].set_inputs(layers[i].outputs[1])
+            self.network[i].forward()
+            self.network[i+1].set_inputs(self.network[i].outputs[1])
         self.output_layer.forward()
 
     def show_output(self):
@@ -154,12 +148,16 @@ class Network:
         Shows the final output of the entire network's calculations
         :return: Prints the output layer's outputs
         """
-        print('Final output : ', list(self.output_layer.outputs))
+        print('Final output : ', self.output_layer.outputs[1])
+
+    def set_inputs(self, inputs):
+        self.network[0].set_inputs(inputs)
 
     def backpropagation(self, d, learning_rate):
         """
         A method used for a single backwards pass using backpropagation
         :param d: The actual values
+        :param learning_rate: The learning rate
         :return: Sets the weights closer to the correct value for optimal classification
         """
 
@@ -215,7 +213,41 @@ class Network:
 
 
 if __name__ == '__main__':
-    input = np.random.rand(3, 1)
-    network = Network(3, 3, 1, 4, input)
-    network.forward()
+    # XOR inputs and outputs
+    X = [
+        np.array([[0], [0]]),
+        np.array([[0], [1]]),
+        np.array([[1], [0]]),
+        np.array([[1], [1]])
+    ]
+    y = [
+        np.array([[0]]),
+        np.array([[1]]),
+        np.array([[1]]),
+        np.array([[0]])
+    ]
+
+    network = Network(
+        input_size=2,
+        output_size=1,
+        hidden_layer_size=0,
+        hidden_layer_count=0,
+    )
+
+    # TODO: The network's forward method needs to have an input parameter and there shouldn't be an input layer
+
+    for i in range(4):
+        network.forward(X[i])
+        network.show_output()
+
+        network.backpropagation(
+            d=np.array(y[i]),
+            learning_rate=1,
+        )
+
+        network.forward(X[i])
+        network.show_output()
+
+    network.forward(np.array([0,1]))
+    print("Full proper test : ")
     network.show_output()
