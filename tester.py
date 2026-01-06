@@ -1,16 +1,11 @@
 import numpy as np
 
-a = np.array(
-    [
-        [2,2,2],
-        [2,2,2]
-     ]
-)
+k = 3
+j = 4
 
-print(a)
+a = np.ones((3,3))
+print(3 * a)
 
-a[:,0:2] *= 2
-print(a.shape)
 
 """
 in numpy array indexing, it goes like
