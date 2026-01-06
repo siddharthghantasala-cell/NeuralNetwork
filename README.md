@@ -47,40 +47,6 @@ The network learns by computing gradients and updating weights:
 3. **Weight gradients**: Compute gradients as the outer product of the error and the previous layer's activations — this produces a matrix exactly matching the weights' dimensions
 4. **Update**: Adjust weights and biases using the gradients scaled by learning rate
 
-## Usage
-
-```python
-import numpy as np
-from NeuralNetwork import Network
-
-# Create sample input data
-input_data = np.random.rand(2, 1)
-
-# Initialize network
-# Parameters: input_size, output_size, hidden_layer_count, hidden_layer_size, inputs
-network = Network(
-    input_size=2,
-    output_size=2,
-    hidden_layer_count=1,
-    hidden_layer_size=3,
-    inputs=input_data
-)
-
-# Forward pass
-network.forward()
-network.show_output()
-
-# Single backpropagation step
-expected_output = np.array([[0.5], [0.8]])
-learning_rate = 0.01
-network.backpropagation(expected_output, learning_rate)
-
-# Training loop (basic example)
-for epoch in range(1000):
-    network.forward()
-    network.backpropagation(expected_output, learning_rate)
-```
-
 ## Network Parameters
 
 | Parameter | Description |
