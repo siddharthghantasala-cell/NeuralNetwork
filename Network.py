@@ -3,9 +3,9 @@ from ActivationFunctions import *
 
 class Layer:
     def __init__(self, input_size, output_size, activation):
-        self.inputs = np.zeros(input_size) # Vector of dimensions nx1
-        self.weights = np.matrix(np.random.rand(output_size, input_size)) # Matrix of dimensions mxn (to pre multiply with input vector)
-        self.biases = np.matrix(np.random.rand(output_size, 1)) # Vector of dimensions (to add to output vector)
+        self.inputs = np.random.rand(input_size,) # Vector of dimensions nx1
+        self.weights = np.random.rand(output_size, input_size) # Matrix of dimensions mxn (to pre multiply with input vector)
+        self.biases = np.random.rand(output_size,) # Vector of dimensions (to add to output vector)
         self.activation = activation
         self.outputs = [None, None] # Output vector of dimensions mx1 where the first index has the value
         # after running through activation function and the second index has the value before running through the activaiton function
@@ -15,7 +15,7 @@ class Layer:
         Forward pass for 1 layer
         :return: Sets outputs to the result of calculating the forward pass, which is the multiplication of the weight matrix and input vectors in that order
         """
-        self.outputs[0] = self.weights.dot(self.inputs) + self.biases
+        self.outputs[0] = np.dot(self.weights, self.inputs) + self.biases
         self.outputs[1] = self.activation(self.outputs[0])
 
     def set_inputs(self, inputs):
@@ -116,7 +116,9 @@ class Network:
             input_size,
             output_size,
             hidden_layer_count,
-            hidden_layer_size
+            hidden_layer_size,
+            activation_function,
+            output_activation
     ):
         if hidden_layer_count == 0:
             hidden_layer_size = input_size
@@ -124,8 +126,8 @@ class Network:
         # self.input_layer = Layer(input_size, hidden_layer_size, relu)
         # self.input_layer.set_inputs(inputs)
 
-        self.hidden_layers = [Layer(hidden_layer_size, hidden_layer_size, relu) for _ in range(hidden_layer_count)]
-        self.output_layer = Layer(hidden_layer_size, output_size, relu)
+        self.hidden_layers = [Layer(input_size, hidden_layer_size, activation_function)] + [Layer(hidden_layer_size, hidden_layer_size, activation_function) for _ in range(hidden_layer_count - 1)]
+        self.output_layer = Layer(hidden_layer_size, output_size, output_activation)
 
         # self.network = [self.input_layer] + self.hidden_layers + [self.output_layer]
         self.network = self.hidden_layers + [self.output_layer]
@@ -136,7 +138,7 @@ class Network:
         Forward pass for the network
         :return: None. It calculates the output of the network with the given inputs
         """
-
+        self.network[0].set_inputs(inputs)
         for i in range(0,len(self.network) - 1):
             # Basically feed forward of the first layer, then put those outputs as in the inputs of the next layer
             self.network[i].forward()
@@ -150,8 +152,12 @@ class Network:
         """
         print('Final output : ', self.output_layer.outputs[1])
 
-    def set_inputs(self, inputs):
-        self.network[0].set_inputs(inputs)
+    def return_output(self):
+        """
+        Returns the final output of the entire network's calculations
+        :return: the output layer's outputs
+        """
+        return self.output_layer.outputs[1]
 
     def backpropagation(self, d, learning_rate):
         """
@@ -213,41 +219,45 @@ class Network:
 
 
 if __name__ == '__main__':
-    # XOR inputs and outputs
     X = [
-        np.array([[0], [0]]),
-        np.array([[0], [1]]),
-        np.array([[1], [0]]),
-        np.array([[1], [1]])
+        np.array([0, 0]),
+        np.array([0, 1]),
+        np.array([1, 0]),
+        np.array([1, 1]),
     ]
     y = [
-        np.array([[0]]),
-        np.array([[1]]),
-        np.array([[1]]),
-        np.array([[0]])
+        np.array([0]),
+        np.array([1]),
+        np.array([1]),
+        np.array([0]),
     ]
 
     network = Network(
         input_size=2,
         output_size=1,
-        hidden_layer_size=0,
-        hidden_layer_count=0,
+        hidden_layer_size=3,
+        hidden_layer_count=2,
+        activation_function=sigmoid,
+        output_activation=sigmoid,
     )
 
-    # TODO: The network's forward method needs to have an input parameter and there shouldn't be an input layer
+    epochs = 10000
+    for _ in range(epochs):
+        for i in range(4):
+            network.forward(X[i])
 
-    for i in range(4):
-        network.forward(X[i])
+            network.backpropagation(
+                d=np.array(y[i]),
+                learning_rate=0.25,
+            )
+
+    print("\n--------------- testing ---------------\n")
+
+    outputs = []
+    for entry in X:
+        network.forward(entry)
         network.show_output()
+        outputs.append(network.return_output())
 
-        network.backpropagation(
-            d=np.array(y[i]),
-            learning_rate=1,
-        )
-
-        network.forward(X[i])
-        network.show_output()
-
-    network.forward(np.array([0,1]))
-    print("Full proper test : ")
-    network.show_output()
+    print("After softmax : ")
+    print(softmax(outputs, 0.01))
