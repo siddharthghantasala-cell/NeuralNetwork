@@ -1,11 +1,10 @@
 import numpy as np
-from ActivationFunctions import *
 
 class Layer:
     def __init__(self, input_size, output_size, activation):
-        self.inputs = np.random.rand(input_size,) # Vector of dimensions nx1
-        self.weights = np.random.rand(output_size, input_size) # Matrix of dimensions mxn (to pre multiply with input vector)
-        self.biases = np.random.rand(output_size,) # Vector of dimensions (to add to output vector)
+        self.inputs = np.random.randn(input_size,) # Vector of dimensions nx1
+        self.weights = np.random.randn(output_size, input_size) * 0.5 # Matrix of dimensions mxn (to pre multiply with input vector)
+        self.biases = np.random.randn(output_size,) * 0.5 # Vector of dimensions (to add to output vector)
         self.activation = activation
         self.outputs = [None, None] # Output vector of dimensions mx1 where the first index has the value
         # after running through activation function and the second index has the value before running through the activaiton function
@@ -109,12 +108,8 @@ class Layer:
 
         return new_gradient
 
-    def __str__(self):
-        return f"""
-        Input Shape : {self.inputs.shape}
-        Output Shape : {self.outputs[0].shape if outputs[0] is not None else None}
-        Activation function : {self.activation.__name__}
-        """
+    def __repr__(self):
+        return f"Layer(in={self.inputs.shape}, out={self.outputs})"
 
 
 class Network:
@@ -135,6 +130,13 @@ class Network:
 
         self.network = self.hidden_layers + [self.output_layer]
 
+        self.input_size = input_size
+        self.output_size = output_size
+        self.hidden_layer_count= hidden_layer_count
+        self.hidden_layer_size = hidden_layer_size
+        self.activation_function = activation_function
+        self.output_activation = output_activation
+
     def forward(self, inputs):
         """
         Forward pass for the network
@@ -152,7 +154,7 @@ class Network:
         Shows the final output of the entire network's calculations
         :return: Prints the output layer's outputs
         """
-        print('Final output : ', self.output_layer.outputs[1])
+        print('<Network> Final output : ', self.output_layer.outputs[1])
 
     def return_output(self):
         """
@@ -194,6 +196,8 @@ class Network:
         # which should be the size of the output layer
         output_error = dL * d_output_active(self.output_layer.outputs[0])
 
+        backprop_gradient = self.output_layer.weights.T @ output_error
+
         """
         Updating the output weights
         """
@@ -210,7 +214,7 @@ class Network:
         Then we need to propagate the error back through the network using the newly obtained error term
         """
         network = self.network[:-1]
-        backprop_gradient = self.output_layer.weights.T @ output_error
+
         # Go through all the layers (except the output layer), find the error and update the weights accordingly
         # using each layer's backprop method
         for layer in reversed(network):
@@ -226,47 +230,13 @@ class Network:
         # We need to add minibatch gradient descent where it splits the training data into
         # batches, averages the error and use THAT to update the network
         for _ in range(epochs):
-            for i in range(batch_size):
-                network.forward(data[i])
+            for i in range(len(data)):
+                self.forward(data[i])
 
-                network.backpropagation(
+                self.backpropagation(
                     d=np.array(test_data[i]),
                     learning_rate=0.01,
                 )
 
-
-if __name__ == '__main__':
-    X = [
-        np.array([0, 0]),
-        np.array([0, 1]),
-        np.array([1, 0]),
-        np.array([1, 1]),
-    ]
-    y = [
-        np.array([0]),
-        np.array([0]),
-        np.array([0]),
-        np.array([1]),
-    ]
-
-    network = Network(
-        input_size=2,
-        output_size=1,
-        hidden_layer_size=2,
-        hidden_layer_count=1,
-        activation_function=relu,
-        output_activation=relu,
-    )
-
-    print("\n--------------- testing ---------------\n")
-
-    network.train(25, X, 1000, y)
-
-    outputs = []
-    for entry in X:
-        network.forward(entry)
-        network.show_output()
-        outputs.append(network.return_output())
-
-    print("After softmax : ")
-    print(softmax(outputs, 0.01))
+    def __repr__(self):
+        return f" input ({self.input_size}) | hidden layers ({self.hidden_layer_count}) ({self.hidden_layer_size}) | output layer ({self.output_size})"

@@ -13,3 +13,8 @@ def relu(x : np.ndarray, derivative : bool = False) -> int:
 def softmax(x : np.ndarray, temperature=1.0) -> int:
     e_x = np.exp((x - np.max(x)) / temperature)
     return e_x / e_x.sum(axis=0)
+
+def tanh(x : np.ndarray, derivative : bool = False) -> int:
+    if derivative:
+        return 1 - np.tanh(x) ** 2
+    return np.tanh(x)
