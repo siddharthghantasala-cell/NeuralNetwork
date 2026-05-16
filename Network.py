@@ -196,6 +196,8 @@ class Network:
         # which should be the size of the output layer
         output_error = dL * d_output_active(self.output_layer.outputs[0])
 
+        # We need to make sure to calculate the backpropagation gradient BEFORE changing
+        # the weights because we need to be learning from the weights that made the wrong prediction
         backprop_gradient = self.output_layer.weights.T @ output_error
 
         """
@@ -223,7 +225,7 @@ class Network:
                 learning_rate=learning_rate
             )
 
-    def train(self, batch_size, data, epochs, test_data):
+    def train(self, learning_rate, data, epochs, test_data):
         # currently batch gradient descent where we throw all the training samples at the
         # network
 
@@ -235,7 +237,7 @@ class Network:
 
                 self.backpropagation(
                     d=np.array(test_data[i]),
-                    learning_rate=0.01,
+                    learning_rate=learning_rate,
                 )
 
     def __repr__(self):

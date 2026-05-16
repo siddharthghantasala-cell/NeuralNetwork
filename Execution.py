@@ -25,7 +25,7 @@ def main():
     )
 
     print("training...")
-    network.train(25, X, 10000, y)
+    network.train(0.1, X, 10000, y)
 
     print("\n--------------- testing ---------------\n")
 
