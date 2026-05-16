@@ -60,7 +60,7 @@ class Layer:
 
     def backprop(self, upstream_gradient,learning_rate):
         """
-        A method used to find the gradient of the weights and biases in the output layer
+        A method used to run a backwards pass on one layer
         :param upstream_gradient: The gradient propagated from the previous layer
         :param learning_rate: The learning rate at which the network learns
         :return: Finds the final gradient of the loss function
@@ -109,6 +109,13 @@ class Layer:
 
         return new_gradient
 
+    def __str__(self):
+        return f"""
+        Input Shape : {self.inputs.shape}
+        Output Shape : {self.outputs[0].shape if outputs[0] is not None else None}
+        Activation function : {self.activation.__name__}
+        """
+
 
 class Network:
     def __init__(
@@ -118,20 +125,15 @@ class Network:
             hidden_layer_count,
             hidden_layer_size,
             activation_function,
-            output_activation
+            output_activation,
     ):
         if hidden_layer_count == 0:
             hidden_layer_size = input_size
 
-        # self.input_layer = Layer(input_size, hidden_layer_size, relu)
-        # self.input_layer.set_inputs(inputs)
-
         self.hidden_layers = [Layer(input_size, hidden_layer_size, activation_function)] + [Layer(hidden_layer_size, hidden_layer_size, activation_function) for _ in range(hidden_layer_count - 1)]
         self.output_layer = Layer(hidden_layer_size, output_size, output_activation)
 
-        # self.network = [self.input_layer] + self.hidden_layers + [self.output_layer]
         self.network = self.hidden_layers + [self.output_layer]
-        # self.network[0].set_inputs(inputs)
 
     def forward(self, inputs):
         """
@@ -217,6 +219,21 @@ class Network:
                 learning_rate=learning_rate
             )
 
+    def train(self, batch_size, data, epochs, test_data):
+        # currently batch gradient descent where we throw all the training samples at the
+        # network
+
+        # We need to add minibatch gradient descent where it splits the training data into
+        # batches, averages the error and use THAT to update the network
+        for _ in range(epochs):
+            for i in range(batch_size):
+                network.forward(data[i])
+
+                network.backpropagation(
+                    d=np.array(test_data[i]),
+                    learning_rate=0.01,
+                )
+
 
 if __name__ == '__main__':
     X = [
@@ -227,31 +244,23 @@ if __name__ == '__main__':
     ]
     y = [
         np.array([0]),
-        np.array([1]),
-        np.array([1]),
         np.array([0]),
+        np.array([0]),
+        np.array([1]),
     ]
 
     network = Network(
         input_size=2,
         output_size=1,
-        hidden_layer_size=3,
-        hidden_layer_count=2,
-        activation_function=sigmoid,
-        output_activation=sigmoid,
+        hidden_layer_size=2,
+        hidden_layer_count=1,
+        activation_function=relu,
+        output_activation=relu,
     )
 
-    epochs = 10000
-    for _ in range(epochs):
-        for i in range(4):
-            network.forward(X[i])
-
-            network.backpropagation(
-                d=np.array(y[i]),
-                learning_rate=0.25,
-            )
-
     print("\n--------------- testing ---------------\n")
+
+    network.train(25, X, 1000, y)
 
     outputs = []
     for entry in X:

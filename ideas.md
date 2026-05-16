@@ -1,14 +1,12 @@
 # Ideas for Neural Network
 
-## Idea 1:
-
 #### Idea for modifiable layer sizes : 
 Get a list the length of which is the number of all the hidden layers where each index corresponds to each hidden layer in order. 
 The indexes of the list will contain an integer depicting the number of neurons in that layer
 
 #### Idea for regularization:
 Add a regularization parameter in the network object initialization. Will need to add methods of using it's derivative for back 
-propagation. 
+propagation. Will probably implement it like how I did with the activation functions. 
 
 #### Idea for more loss functions:
 Currently I only have Mean Squared Error (MSE) and I need to make that generalizable to other loss functions in a similar vein to 
