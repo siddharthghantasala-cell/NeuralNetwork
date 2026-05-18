@@ -3,11 +3,14 @@ import numpy as np
 class Layer:
     def __init__(self, input_size, output_size, activation):
         self.inputs = np.random.randn(input_size,) # Vector of dimensions nx1
-        self.weights = np.random.randn(output_size, input_size) * 0.5 # Matrix of dimensions mxn (to pre multiply with input vector)
-        self.biases = np.random.randn(output_size,) * 0.5 # Vector of dimensions (to add to output vector)
+        self.weights = np.random.randn(output_size, input_size) # Matrix of dimensions mxn (to pre multiply with input vector)
+        self.biases = np.random.randn(output_size,) # Vector of dimensions (to add to output vector)
         self.activation = activation
         self.outputs = [None, None] # Output vector of dimensions mx1 where the first index has the value
         # after running through activation function and the second index has the value before running through the activaiton function
+
+        self.input_size = input_size
+        self.output_size = output_size
 
     def forward(self):
         """
@@ -109,7 +112,7 @@ class Layer:
         return new_gradient
 
     def __repr__(self):
-        return f"Layer(in={self.inputs.shape}, out={self.outputs})"
+        return f"Layer(in={self.input_size}, out={self.output_size})"
 
 
 class Network:
@@ -125,7 +128,10 @@ class Network:
         if hidden_layer_count == 0:
             hidden_layer_size = input_size
 
-        self.hidden_layers = [Layer(input_size, hidden_layer_size, activation_function)] + [Layer(hidden_layer_size, hidden_layer_size, activation_function) for _ in range(hidden_layer_count - 1)]
+        self.hidden_layers = ([Layer(input_size, hidden_layer_size, activation_function)] +
+                              [Layer(hidden_layer_size, hidden_layer_size, activation_function)
+                               for _ in range(hidden_layer_count - 1)])
+
         self.output_layer = Layer(hidden_layer_size, output_size, output_activation)
 
         self.network = self.hidden_layers + [self.output_layer]
