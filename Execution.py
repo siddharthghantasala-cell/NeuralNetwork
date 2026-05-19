@@ -48,9 +48,9 @@ def main():
     mnist_network = Network(
         input_size=784,
         output_size=10,
-        hidden_layer_size= 200,
+        hidden_layer_size= 522,
         hidden_layer_count= 7,
-        activation_function= relu,
+        activation_function= sigmoid,
         output_activation= softmax,
     )
 
@@ -74,15 +74,33 @@ def main():
     # Flattening the datapoints into 1D arrays
     x_train_aug = []
     for dp in x_train[:10]:
-        x_train_aug.append(np.array(dp).flatten())
+        flattened = (np.array(dp, dtype=np.int64).flatten())
+        max_val = max(flattened)
+        min_val = min(flattened)
+        x_train_aug.append((flattened - min_val) / (max_val - min_val))
 
+    y_train_aug = []
+    for label in y_train[:10]:
+        y_train_aug.append(
+            np.array([0 for _ in range(label)] + [1] + [0 for _ in range(10 - label)])
+        )
 
     mnist_network.train(
         learning_rate=0.01,
         data=x_train_aug,
         epochs=1,
-        test_data=y_train,
+        test_data=y_train_aug,
     )
+
+    test_i = 7
+    # test_label = np.array([0 for _ in range(y_test[test_i])] + [1] + [0 for _ in range(10 - y_test[test_i])])
+    test = np.array(x_test, dtype=np.int64).flatten()
+    max_val = max(test)
+    min_val = min(test)
+    test = test - min_val / (max_val - min_val)
+    mnist_network.forward(test)
+    mnist_network.show_output()
+    print(f"<Execution> Expected output is {y_test[test_i]}")
 
 if __name__ == "__main__":
     main()
