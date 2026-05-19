@@ -87,11 +87,12 @@ def main():
 
     print("training...")
 
-    mnist_network.singleton_grad_desc(
+    mnist_network.mini_batch_grad_desc(
         learning_rate=0.5,
         data=x_train_aug,
         epochs=100,
         labels=y_train_aug,
+        batch_size=256,
     )
 
     print("training complete!")

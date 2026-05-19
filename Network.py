@@ -7,7 +7,7 @@ class Layer:
         self.biases = np.random.randn(output_size,) # Vector of dimensions (to add to output vector)
         self.activation = activation
         self.outputs = [None, None] # Output vector of dimensions mx1 where the first index has the value
-        # after running through activation function and the second index has the value before running through the activaiton function
+        # after running through activation function and the second index has the value before running through the activation function
 
         self.input_size = input_size
         self.output_size = output_size
@@ -71,7 +71,7 @@ class Layer:
         if not isinstance(self.outputs[1], np.ndarray):
             raise ValueError('The output layer has not been set yet')
 
-        # We differentiate the activation function (should probably be the same across all layers but I'm just doing it anyway)
+        # We differentiate the activation function (should probably be the same across all layers, but I'm just doing it anyway)
         def d_active(x):
             return self.activation(x, True)
 
@@ -169,11 +169,12 @@ class Network:
         """
         return self.output_layer.outputs[1]
 
-    def backpropagation(self, d, learning_rate):
+    def backpropagation(self, data : list[np.ndarray], labels : list[np.ndarray], learning_rate : int):
         """
-        A method used for a single backwards pass using backpropagation
-        :param d: The actual values
+        A method used for a single backwards pass using backpropagation using a single label
+        :param data: The iterable of training data
         :param learning_rate: The learning rate
+        :param labels: The iterable of training labels
         :return: Sets the weights closer to the correct value for optimal classification
         """
 
@@ -183,16 +184,15 @@ class Network:
             2. Doing backpropagation between hidden layers 
         """
 
+        # Calculating the gradient based on the provided labels and datapoints
         if (not isinstance(self.output_layer.outputs[1], np.ndarray)
                 and not isinstance(self.output_layer.outputs[0], np.ndarray)):
             raise ValueError('Forward pass not done yet')
 
-        """
-        Step 1
-        First we need to do the backpropagation at the output layer
-        """
         # This involves differentiating the cost function (in this case we're using MSE)
-        dL = (self.output_layer.outputs[1] - d)
+        dL = 0
+        for label in labels:
+            dL = (self.output_layer.outputs[1] - label)
 
         # Then differentiating the activation function
         def d_output_active(x):
@@ -201,6 +201,11 @@ class Network:
         # The error vector to be propagated through the network is computed as such
         # which should be the size of the output layer
         output_error = dL * d_output_active(self.output_layer.outputs[0])
+
+        """
+        Step 1
+        First we need to do the backpropagation at the output layer
+        """
 
         # We need to make sure to calculate the backpropagation gradient BEFORE changing
         # the weights because we need to be learning from the weights that made the wrong prediction
@@ -261,14 +266,22 @@ class Network:
         :return: None
         """
         import random
-        batch = []
-        batch_labels = []
-        for _ in range(batch_size):
-            index = random.randint(0, len(data) - 1)
-            batch.append(data[index])
-            batch_labels.append(labels[index])
+        """
+        Mini batch-gradient descent steps:
+         - Shuffle the datapoints via indices,
+         - Split those indices into batches,
+         - Find the gradient based on all of those datapoints in each batch
+         - Sum up and average the gradient
+         - Do a single weight update and repeat for every batch (1 epoch) 
+        """
 
-        self.singleton_grad_desc(learning_rate=learning_rate, data=batch, epochs=epochs, labels=batch_labels)
+        # Shuffle the datapoints via indices
+        r_indices = random.sample(range(len(data)), len(data))
+
+        # Split those indices into batches
+        # - can be done implicitly (I think)
+
+        # Find the gradient based on all of those datapoints in each batch
 
 
     def __repr__(self):
