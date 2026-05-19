@@ -238,7 +238,10 @@ class Network:
         # We need to add minibatch gradient descent where it splits the training data into
         # batches, averages the error and use THAT to update the network
         for _ in range(epochs):
+            print(f"Epoch {_}")
+
             for i in range(len(data)):
+                print(f"    Datapoint {i}")
                 self.forward(data[i])
 
                 self.backpropagation(
