@@ -231,8 +231,8 @@ class Network:
                 learning_rate=learning_rate
             )
 
-    def train(self, learning_rate, data, epochs, test_data):
-        # currently batch gradient descent where we throw all the training samples at the
+    def singleton_grad_desc(self, learning_rate, data, epochs, labels):
+        # currently a gradient descent where we throw all the training samples at the
         # network
 
         # We need to add minibatch gradient descent where it splits the training data into
@@ -245,9 +245,31 @@ class Network:
                 self.forward(data[i])
 
                 self.backpropagation(
-                    d=np.array(test_data[i]),
+                    d=np.array(labels[i]),
                     learning_rate=learning_rate,
                 )
+
+    def mini_batch_grad_desc(self, learning_rate, data, epochs, labels, batch_size):
+        """
+        A method to run stochastic mini-batch gradient descent on the network by calling the prior
+        train method
+        :param learning_rate: The learning rate
+        :param data: The training data
+        :param epochs: The number of epochs
+        :param labels: The labels of the data
+        :param batch_size: The size of the mini-batch
+        :return: None
+        """
+        import random
+        batch = []
+        batch_labels = []
+        for _ in range(batch_size):
+            index = random.randint(0, len(data) - 1)
+            batch.append(data[index])
+            batch_labels.append(labels[index])
+
+        self.singleton_grad_desc(learning_rate=learning_rate, data=batch, epochs=epochs, labels=batch_labels)
+
 
     def __repr__(self):
         return f" input ({self.input_size}) | hidden layers ({self.hidden_layer_count}) ({self.hidden_layer_size}) | output layer ({self.output_size})"
