@@ -64,11 +64,10 @@ class Layer:
         else:
             raise TypeError('Input must be a numpy array or a list')
 
-    def backward(self, upstream_gradient, learning_rate):
+    def backward(self, upstream_gradient):
         """
         A method used to run a backwards pass on one layer. Calculates upstream gradient and layer gradient
         :param upstream_gradient: The gradient propagated from the previous layer
-        :param learning_rate: The learning rate
         :return: Finds the final gradient of the loss function
         """
         # Calculate the linear combination going into the activation function for each output node
@@ -95,7 +94,7 @@ class Layer:
         # This creates a rank 1 matrix that makes sure that all the weights coming from input 'i' are multiplied
         # by i (after multiplying the calculated error appropriately) and accumulates all gradients of all data
         # points in the batch
-        self.dW += learning_rate * np.outer(error, self.inputs)
+        self.dW += np.outer(error, self.inputs)
 
         # For now, simply calculate the error
         """
@@ -121,7 +120,7 @@ class Layer:
         self.dW /= batch_size
 
         # Finally update the weights
-        self.weights -= self.dW
+        self.weights -= learning_rate * self.dW
 
         """
         Updating the biases
@@ -132,11 +131,11 @@ class Layer:
 
     def reset_grad(self):
         """
-        A function used to reset the gradient accumulator back to 0
+        A function used to reset the gradient accumulator and error accumulator back to 0
         :return: None. Resets the gradient
         """
-        self.dW = np.zeros(self.output_size, self.input_size)
-
+        self.dW = np.zeros((self.output_size, self.input_size), dtype=float)
+        self.db = np.zeros((self.output_size,), dtype=float)
 
     def __repr__(self):
         return f"Layer(in={self.input_size}, out={self.output_size})"
@@ -196,76 +195,75 @@ class Network:
         """
         return self.output_layer.outputs[1]
 
-    def backpropagation(self, output_error, learning_rate : int):
-        """
-        A method used for a single backwards pass through the network using a single label
-        :param learning_rate: The learning rate
-        :param output_error: The error found via calculating the gradient on a batch of data
-        :return: Sets the weights closer to the correct value for optimal classification
-        """
+    # def backpropagation(self, output_error, learning_rate : int):
+    #     """
+    #     A method used for a single backwards pass through the network using a single label
+    #     :param learning_rate: The learning rate
+    #     :param output_error: The error found via calculating the gradient on a batch of data
+    #     :return: Sets the weights closer to the correct value for optimal classification
+    #     """
+    #
+    #
+    #     """
+    #     What is done:
+    #         - One forward pass through the network in the training method
+    #         - Error at output calculated
+    #
+    #     """
+    #
+    #
+    #
+    #     """
+    #     This process will take place in two steps:
+    #         1. Doing backpropagation from the outputs
+    #         2. Doing backpropagation between hidden layers
+    #     """
+    #
+    #     """
+    #     Step 1
+    #     First we need to do the backpropagation at the output layer
+    #     """
+    #
+    #     # We need to make sure to calculate the backpropagation gradient BEFORE changing
+    #     # the weights because we need to be learning from the weights that made the wrong prediction
+    #     backprop_gradient = self.output_layer.weights.T @ output_error
+    #
+    #     """
+    #     Updating the output weights
+    #     """
+    #     dW_output = learning_rate * np.outer(output_error, self.output_layer.inputs)
+    #     self.output_layer.weights -= dW_output
+    #
+    #     """
+    #     Updating the biases
+    #     """
+    #     self.output_layer.biases -= learning_rate * output_error
+    #
+    #     """
+    #     Step 2
+    #     Then we need to propagate the error back through the network using the newly obtained error term
+    #     """
+    #     network = self.network[:-1]
+    #
+    #     # Go through all the layers (except the output layer), find the error and update the weights accordingly
+    #     # using each layer's backprop method
+    #     for layer in reversed(network):
+    #         backprop_gradient = layer.backward(
+    #             upstream_gradient=backprop_gradient,
+    #             learning_rate=learning_rate
+    #         )
 
-
-        """
-        What is done: 
-            - One forward pass through the network in the training method
-            - Error at output calculated 
-        
-        """
-
-
-
-        """
-        This process will take place in two steps:
-            1. Doing backpropagation from the outputs
-            2. Doing backpropagation between hidden layers 
-        """
-
-        """
-        Step 1
-        First we need to do the backpropagation at the output layer
-        """
-
-        # We need to make sure to calculate the backpropagation gradient BEFORE changing
-        # the weights because we need to be learning from the weights that made the wrong prediction
-        backprop_gradient = self.output_layer.weights.T @ output_error
-
-        """
-        Updating the output weights
-        """
-        dW_output = learning_rate * np.outer(output_error, self.output_layer.inputs)
-        self.output_layer.weights -= dW_output
-
-        """
-        Updating the biases
-        """
-        self.output_layer.biases -= learning_rate * output_error
-
-        """
-        Step 2
-        Then we need to propagate the error back through the network using the newly obtained error term
-        """
-        network = self.network[:-1]
-
-        # Go through all the layers (except the output layer), find the error and update the weights accordingly
-        # using each layer's backprop method
-        for layer in reversed(network):
-            backprop_gradient = layer.backward(
-                upstream_gradient=backprop_gradient,
-                learning_rate=learning_rate
-            )
-
-    def backwards(self, output_error, learning_rate):
+    def backward(self, loss_error):
         """
         A method used to perform a single backwards pass through the whole network by calling each layer's backward() method
-        :param output_error: The error calculated via calculating the gradient on a single datapoint from the output layer
-        :param learning_rate: The learning rate
+        :param loss_error: The error calculated via calculating the gradient on a single datapoint from the output layer
         """
         # We need to make sure to calculate the backpropagation gradient BEFORE changing
         # the weights because we need to be learning from the weights that made the wrong prediction
-        backprop_gradient = self.output_layer.weights.T @ output_error
+        backwards_gradient = loss_error
 
-        for layer in reversed(self.network[:-1]):
-            backprop_gradient = layer.backward(backprop_gradient, learning_rate)
+        for layer in reversed(self.network):
+            backwards_gradient = layer.backward(backwards_gradient)
 
 
     def update(self, learning_rate, batch_size):
@@ -275,7 +273,7 @@ class Network:
         :param batch_size: The batch size
         :return: None. Updates the weights and biases
         """
-        for layer in reversed(self.network[:-1]):
+        for layer in reversed(self.network):
             layer.update(learning_rate=learning_rate, batch_size=batch_size)
 
     def mini_batch_grad_desc(self, learning_rate, data, epochs, labels, batch_size):
@@ -315,7 +313,7 @@ class Network:
 
             # Based on the batch size, will iterate through all the data using len(data)/batch_size iterations
             for batch in range(0, len(data), batch_size):
-                for dp in range(batch,batch+batch_size):
+                for dp in range(batch,min(batch+batch_size, len(data))):
                     # We need the network's current predictions with a forward pass
                     self.forward(data[r_indices[dp]])
 
@@ -324,18 +322,29 @@ class Network:
 
                     # The error vector to be propagated through the network is computed as such
                     # which should be the size of the output layer
-                    output_error = dL * d_output_active(self.output_layer.outputs[0])
+                    # output_error = dL * d_output_active(self.output_layer.outputs[0])
 
                     # Do one backwards pass for this datapoint through the whole network to sum up the gradients
-                    self.backwards(output_error, learning_rate)
+                    self.backward(dL)
 
-            # Once we're done accumulating the gradient in each layer, we run each layer's update method and update
-            # all the weights with the accumulated gradients
-            self.update(learning_rate, batch_size)
+                # Once we're done accumulating the gradient in each layer, we run each layer's update method and update
+                # all the weights with the accumulated gradients
+                self.update(learning_rate, min(len(data)-batch, batch_size))
+
+                # Once we're done with this batch, we reset the gradient accumulators so we can start with new ones to update
+                # the weights with
+                self.reset_grad()
 
     def singleton_grad_desc(self, learning_rate, data, epochs, labels):
         self.mini_batch_grad_desc(learning_rate=learning_rate, data=data, epochs=epochs, labels=labels, batch_size=1)
 
+
+    def reset_grad(self):
+        """
+        A method to reset the gradients across the whole network
+        """
+        for layer in reversed(self.network):
+            layer.reset_grad()
 
 
     def __repr__(self):
