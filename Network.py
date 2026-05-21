@@ -109,10 +109,9 @@ class Layer:
         return new_gradient
 
 
-    def update(self, error, learning_rate, batch_size):
+    def update(self, learning_rate, batch_size):
         """
         A method used to only update the weights and biases of the layer during the update pass
-        :param error: The error to be propagated
         :param learning_rate: The learning rate
         :param batch_size: The batch size
         :return: None. Updates the weights and biases
@@ -127,7 +126,8 @@ class Layer:
         """
         Updating the biases
         """
-        self.biases -= learning_rate * error
+        self.db /= batch_size
+        self.biases -= learning_rate * self.db
 
 
     def reset_grad(self):
@@ -268,16 +268,15 @@ class Network:
             backprop_gradient = layer.backward(backprop_gradient, learning_rate)
 
 
-    def update(self, error, learning_rate, batch_size):
+    def update(self, learning_rate, batch_size):
         """
         A method used to update the weights and biases of the whole network by calling each layer's update() method
-        :param error: The error to be propagated
         :param learning_rate: The learning rate
         :param batch_size: The batch size
         :return: None. Updates the weights and biases
         """
         for layer in reversed(self.network[:-1]):
-            layer.update(error, learning_rate, batch_size)
+            layer.update(learning_rate=learning_rate, batch_size=batch_size)
 
     def mini_batch_grad_desc(self, learning_rate, data, epochs, labels, batch_size):
         """
@@ -313,24 +312,26 @@ class Network:
         for epoch in range(epochs):
             # Shuffle the datapoints via indices
             r_indices = random.sample(range(len(data)), len(data))
-            output_error = np.zeros(self.output_size)
+
             # Based on the batch size, will iterate through all the data using len(data)/batch_size iterations
             for batch in range(0, len(data), batch_size):
                 for dp in range(batch,batch+batch_size):
                     # We need the network's current predictions with a forward pass
                     self.forward(data[r_indices[dp]])
 
-                    # dL is the error from the loss function
+                    # dL is the error from the loss function (Currently just MSE)
                     dL = (self.output_layer.outputs[1] - labels[r_indices[dp]])
 
                     # The error vector to be propagated through the network is computed as such
                     # which should be the size of the output layer
                     output_error = dL * d_output_active(self.output_layer.outputs[0])
 
+                    # Do one backwards pass for this datapoint through the whole network to sum up the gradients
                     self.backwards(output_error, learning_rate)
 
-            # Once we're done accumulating the gradient in each layer, we run each layer's update method
-            self.update()
+            # Once we're done accumulating the gradient in each layer, we run each layer's update method and update
+            # all the weights with the accumulated gradients
+            self.update(learning_rate, batch_size)
 
     def singleton_grad_desc(self, learning_rate, data, epochs, labels):
         self.mini_batch_grad_desc(learning_rate=learning_rate, data=data, epochs=epochs, labels=labels, batch_size=1)
