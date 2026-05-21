@@ -278,15 +278,13 @@ class Network:
             output_error = np.zeros(self.output_size)
             # Based on the batch size, will iterate through all the data using len(data)/batch_size iterations
             for batch in range(0, len(data), batch_size):
-                # Sum up and calculate the gradient
-                dL = 0
                 for dp in range(batch,batch+batch_size):
                     # We need the network's current predictions with a forward pass
                     self.forward(data[r_indices[dp]])
 
                     # After differentiating the cost function, we have an expression that we use to find the
                     # error across all datapoints in the batch and then averaging them to find the final error
-                    dL += (self.output_layer.outputs[1] - labels[r_indices[dp]])
+                    dL = (self.output_layer.outputs[1] - labels[r_indices[dp]])
 
                     # The error vector to be propagated through the network is computed as such
                     # which should be the size of the output layer
