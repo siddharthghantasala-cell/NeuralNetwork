@@ -104,7 +104,7 @@ def main():
     max_val = max(test)
     min_val = min(test)
     test = ((test - min_val) / (max_val - min_val))
-    mnist_network.forward(test)
+    mnist_network.forward(test, batch_size=1)
     print("Network output: ", np.round(mnist_network.return_output()))
     print(f"<Execution> Expected output is {y_test[test_i]}")
 
