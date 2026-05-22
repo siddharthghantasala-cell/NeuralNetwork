@@ -16,12 +16,19 @@ class Layer:
         self.input_size = input_size
         self.output_size = output_size
 
-    def forward(self):
+    def forward(self, batch_size):
         """
         Forward pass for 1 layer
+        :param batch_size: The batch size
         :return: Sets outputs to the result of calculating the forward pass, which is the multiplication of the weight matrix and input vectors in that order
         """
-        self.outputs[0] = np.dot(self.weights, self.inputs) + self.biases
+        # weights are output x input and the dot product gives output x batch
+
+        # TODO: On the last batch, the inputs are coming in with a shape of
+        #  (784, 96) which creates an output of (522, 96) which conflicts
+        #  with the tiled shape of (522, 256)
+
+        self.outputs[0] = np.dot(self.weights, self.inputs) + np.tile(self.biases, (batch_size, 1)).T
         self.outputs[1] = self.activation(self.outputs[0])
 
     def set_inputs(self, inputs):
@@ -88,13 +95,15 @@ class Layer:
         # layer to this layer and do the Hadamard product
         error = upstream_gradient * d_active(self.outputs[0])
 
-        # Accumulate the error
-        self.db += error
+        # error = output x batch_size
 
-        # This creates a rank 1 matrix that makes sure that all the weights coming from input 'i' are multiplied
+        # Accumulate the error
+        self.db = error
+
+        # This creates a rank 1 matrix (when using vectors_ that makes sure that all the weights coming from input 'i' are multiplied
         # by i (after multiplying the calculated error appropriately) and accumulates all gradients of all data
-        # points in the batch
-        self.dW += np.outer(error, self.inputs)
+        # points in the batch. While using batch matrices, this happens implicitly with the regular dot product
+        self.dW += error @ self.inputs.T
 
         # For now, simply calculate the error
         """
@@ -125,7 +134,7 @@ class Layer:
         """
         Updating the biases
         """
-        self.db /= batch_size
+        self.db = np.mean(self.db, axis=1)
         self.biases -= learning_rate * self.db
 
 
@@ -169,17 +178,19 @@ class Network:
         self.activation_function = activation_function
         self.output_activation = output_activation
 
-    def forward(self, inputs):
+    def forward(self, inputs, batch_size):
         """
         Forward pass for the network
+        :param inputs: The inputs to be added in the form of a list of numpy arrays
+        :param batch_size: The batch size
         :return: None. It calculates the output of the network with the given inputs
         """
         self.network[0].set_inputs(inputs)
         for i in range(0,len(self.network) - 1):
             # Basically feed forward of the first layer, then put those outputs as in the inputs of the next layer
-            self.network[i].forward()
+            self.network[i].forward(batch_size)
             self.network[i+1].set_inputs(self.network[i].outputs[1])
-        self.output_layer.forward()
+        self.output_layer.forward(batch_size)
 
     def show_output(self):
         """
@@ -253,16 +264,18 @@ class Network:
     #             learning_rate=learning_rate
     #         )
 
-    def backward(self, loss_error):
+    def backward(self, loss_error, batch_size):
         """
         A method used to perform a single backwards pass through the whole network by calling each layer's backward() method
         :param loss_error: The error calculated via calculating the gradient on a single datapoint from the output layer
+        :param batch_size: The batch size
         """
         # We need to make sure to calculate the backpropagation gradient BEFORE changing
         # the weights because we need to be learning from the weights that made the wrong prediction
         backwards_gradient = loss_error
 
         for layer in reversed(self.network):
+            layer.db = np.tile(layer.db, (batch_size, 1)).T
             backwards_gradient = layer.backward(backwards_gradient)
 
 
@@ -300,32 +313,34 @@ class Network:
         # Find the gradient based on all of those datapoints in each batch
         # - outer loop : epochs
         # - inner loop : batches
-        # - inner inner loop : sum up gradients in each batch
 
-        # Then differentiating the activation function
-        def d_output_active(x):
-            return self.output_layer.activation(x, True)
+        # # Then differentiating the activation function
+        # def d_output_active(x):
+        #     return self.output_layer.activation(x, True)
 
         # Iterates epochs number of times
         for epoch in range(epochs):
             # Shuffle the datapoints via indices
             r_indices = random.sample(range(len(data)), len(data))
+            print("epoch: ", epoch)
 
             # Based on the batch size, will iterate through all the data using len(data)/batch_size iterations
             for batch in range(0, len(data), batch_size):
-                for dp in range(batch,min(batch+batch_size, len(data))):
-                    # We need the network's current predictions with a forward pass
-                    self.forward(data[r_indices[dp]])
+                print(" batch: ", batch//256)
 
-                    # dL is the error from the loss function (Currently just MSE)
-                    dL = (self.output_layer.outputs[1] - labels[r_indices[dp]])
+                # Creating a whole batch matrix that includes all the input vectors of the current batch
+                # The min function is there in case batch+batch_size exceeds len(data)
+                training_batch = np.stack([data[index] for index in r_indices[batch:min(batch+batch_size, len(data))]]).T
 
-                    # The error vector to be propagated through the network is computed as such
-                    # which should be the size of the output layer
-                    # output_error = dL * d_output_active(self.output_layer.outputs[0])
+                # We need the network's current predictions with a forward pass
+                self.forward(training_batch, min(batch_size, len(data)-batch))
 
-                    # Do one backwards pass for this datapoint through the whole network to sum up the gradients
-                    self.backward(dL)
+                # dL is the error from the loss function (Currently just MSE)
+                batch_labels = np.stack([labels[index] for index in r_indices[batch:min(batch+batch_size, len(data))]]).T
+                dL = (self.output_layer.outputs[1] - batch_labels)
+
+                # Do one backwards pass for this datapoint through the whole network to sum up the gradients
+                self.backward(dL, batch_size)
 
                 # Once we're done accumulating the gradient in each layer, we run each layer's update method and update
                 # all the weights with the accumulated gradients
