@@ -22,3 +22,6 @@ as there will then be no need for looping
 It's definitely a little stupid to be training models only to have it get annihilated from this world when Execution.py is finished running.
 I feel like I should've definitely added that before or at least have it have a larger priority on the list of todos
 
+#### He initialization:
+Gotta add He initialization in case we use relu
+

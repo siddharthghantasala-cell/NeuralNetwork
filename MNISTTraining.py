@@ -1,0 +1,110 @@
+import time
+
+from Network import Network
+from ExternalFunctions import *
+from MNISTReader import MnistDataloader
+import pickle
+
+def main():
+    # X = [
+    #     np.array([0, 0]),
+    #     np.array([0, 1]),
+    #     np.array([1, 0]),
+    #     np.array([1, 1]),
+    # ]
+    # y = [
+    #     np.array([0]),
+    #     np.array([1]),
+    #     np.array([1]),
+    #     np.array([1]),
+    # ]
+    #
+    # network = Network(
+    #     input_size=2,
+    #     output_size=1,
+    #     hidden_layer_size=0,
+    #     hidden_layer_count=0,
+    #     activation_function=tanh,
+    #     output_activation=tanh
+    # )
+    #
+    # print("training...")
+    # network.train(0.1, X, 10000, y)
+    #
+    # print("\n--------------- testing ---------------\n")
+    #
+    # outputs = []
+    # for entry in X:
+    #     network.forward(entry)
+    #     network.show_output()
+    #     outputs.append(network.return_output())
+    #
+    # print()
+    #
+    # for i in range(len(outputs)):
+    #     if outputs[i] >= 0.5:
+    #         outputs[i] = 1
+    #     else:
+    #         outputs[i] = 0
+    # print(outputs)
+    mnist_network = Network(
+        input_size=784,
+        output_size=10,
+        hidden_layer_size= 256,
+        hidden_layer_count= 3,
+        activation_function= relu,
+        output_activation= sigmoid,
+        initialization=he_initialization,
+    )
+
+    from os.path  import join
+
+    input_path = 'MNIST/'
+    training_images_filepath = join(input_path, 'train-images-idx3-ubyte/train-images-idx3-ubyte')
+    training_labels_filepath = join(input_path, 'train-labels-idx1-ubyte/train-labels-idx1-ubyte')
+    test_images_filepath = join(input_path, 't10k-images-idx3-ubyte/t10k-images-idx3-ubyte')
+    test_labels_filepath = join(input_path, 't10k-labels-idx1-ubyte/t10k-labels-idx1-ubyte')
+
+    m_reader = MnistDataloader(
+        training_images_filepath=training_images_filepath,
+        training_labels_filepath=training_labels_filepath,
+        test_images_filepath=test_images_filepath,
+        test_labels_filepath=test_labels_filepath,
+    )
+
+    (x_train, y_train), (x_test, y_test) = m_reader.load_data()
+
+    # Flattening the datapoints into 1D arrays
+    x_train_aug = []
+    for dp in x_train:
+        flattened = (np.array(dp, dtype=np.int64).flatten())
+        max_val = max(flattened)
+        min_val = min(flattened)
+        x_train_aug.append((flattened - min_val) / (max_val - min_val))
+
+    y_train_aug = []
+    for label in y_train:
+        y_train_aug.append(
+            np.array([0 for _ in range(label)] + [1] + [0 for _ in range(10 - label - 1)])
+        )
+
+    print("training...")
+    t0 = time.time()
+
+    mnist_network.mini_batch_grad_desc(
+        learning_rate=0.05,
+        data=x_train_aug,
+        epochs=20,
+        labels=y_train_aug,
+        batch_size=64,
+    )
+
+    t1 = time.time()
+
+    print("training complete!")
+    print("elapsed time: ", round(t1 - t0, 2))
+
+    pickle.dump(mnist_network, open('mnist_network.p', 'wb'))
+
+if __name__ == "__main__":
+    main()

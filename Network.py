@@ -1,9 +1,11 @@
 import numpy as np
 
 class Layer:
-    def __init__(self, input_size, output_size, activation):
+    def __init__(self, input_size, output_size, activation, initialization=None):
         self.inputs = np.random.randn(input_size,) # Vector of dimensions nx1
-        self.weights = np.random.randn(output_size, input_size) # Matrix of dimensions mxn (to pre multiply with input vector)
+        initialization_factor = 1 if initialization is None else initialization(input_size, output_size)
+        self.weights = np.random.randn(output_size, input_size) * initialization_factor # Matrix of dimensions mxn (to pre multiply with input vector)
+        # Using He initialization assuming we use relu
         self.biases = np.random.randn(output_size,) # Vector of dimensions (to add to output vector)
         self.activation = activation
         self.outputs = [None, None] # Output vector of dimensions mx1 where the first index has the value
@@ -12,7 +14,6 @@ class Layer:
         # the update pass
         self.db = np.zeros((output_size,), dtype=float) # This is the accumulator for the error calculated through comparing the
         # upstream gradient to the outputs
-
         self.input_size = input_size
         self.output_size = output_size
 
@@ -23,12 +24,7 @@ class Layer:
         :return: Sets outputs to the result of calculating the forward pass, which is the multiplication of the weight matrix and input vectors in that order
         """
         # weights are output x input and the dot product gives output x batch
-
-        # TODO: On the last batch, the inputs are coming in with a shape of
-        #  (784, 96) which creates an output of (522, 96) which conflicts
-        #  with the tiled shape of (522, 256)
-
-        self.outputs[0] = np.dot(self.weights, self.inputs) + np.tile(self.biases, (batch_size, 1)).T
+        self.outputs[0] = np.dot(self.weights, self.inputs) + self.biases[:, None]
         self.outputs[1] = self.activation(self.outputs[0])
 
     def set_inputs(self, inputs):
@@ -103,7 +99,7 @@ class Layer:
         # This creates a rank 1 matrix (when using vectors_ that makes sure that all the weights coming from input 'i' are multiplied
         # by i (after multiplying the calculated error appropriately) and accumulates all gradients of all data
         # points in the batch. While using batch matrices, this happens implicitly with the regular dot product
-        self.dW += error @ self.inputs.T
+        self.dW = error @ self.inputs.T
 
         # For now, simply calculate the error
         """
@@ -159,15 +155,19 @@ class Network:
             hidden_layer_size,
             activation_function,
             output_activation,
+            initialization=None,
+            output_initialization=None,
     ):
+        self.initialization = initialization
+
         if hidden_layer_count == 0:
             hidden_layer_size = input_size
 
-        self.hidden_layers = ([Layer(input_size, hidden_layer_size, activation_function)] +
-                              [Layer(hidden_layer_size, hidden_layer_size, activation_function)
+        self.hidden_layers = ([Layer(input_size, hidden_layer_size, activation_function, initialization)] +
+                              [Layer(hidden_layer_size, hidden_layer_size, activation_function, initialization)
                                for _ in range(hidden_layer_count - 1)])
 
-        self.output_layer = Layer(hidden_layer_size, output_size, output_activation)
+        self.output_layer = Layer(hidden_layer_size, output_size, output_activation, output_initialization)
 
         self.network = self.hidden_layers + [self.output_layer]
 
@@ -275,7 +275,6 @@ class Network:
         backwards_gradient = loss_error
 
         for layer in reversed(self.network):
-            layer.db = np.tile(layer.db, (batch_size, 1)).T
             backwards_gradient = layer.backward(backwards_gradient)
 
 
@@ -326,7 +325,7 @@ class Network:
 
             # Based on the batch size, will iterate through all the data using len(data)/batch_size iterations
             for batch in range(0, len(data), batch_size):
-                print(" batch: ", batch//256)
+                print(" batch: ", batch//batch_size)
 
                 # Creating a whole batch matrix that includes all the input vectors of the current batch
                 # The min function is there in case batch+batch_size exceeds len(data)

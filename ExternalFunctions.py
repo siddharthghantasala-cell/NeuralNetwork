@@ -18,3 +18,6 @@ def tanh(x : np.ndarray, derivative : bool = False) -> int:
     if derivative:
         return 1 - np.tanh(x) ** 2
     return np.tanh(x)
+
+def he_initialization(input_size, output_size):
+    return np.sqrt(2.0/input_size)
