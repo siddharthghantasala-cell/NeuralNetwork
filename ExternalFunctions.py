@@ -16,8 +16,15 @@ def softmax(x : np.ndarray, temperature=1.0) -> int:
 
 def tanh(x : np.ndarray, derivative : bool = False) -> int:
     if derivative:
-        return 1 - np.tanh(x) ** 2
-    return np.tanh(x)
+        return upstream_gradient * (1 - np.tanh(x) ** 2)
+    return upstream_gradient * np.tanh(x)
+
+# Loss functions
+def mse(predicted, actual, derivative : bool = True) -> float:
+    if derivative:
+        return actual - predicted
+    else:
+        return np.round(((predicted - actual) ** 2).mean())
 
 def cross_entropy(predicted : np.ndarray, actual : np.ndarray, is_softmax : bool, derivative : bool = False) -> float:
     if is_softmax:
