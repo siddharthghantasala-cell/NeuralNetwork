@@ -19,5 +19,18 @@ def tanh(x : np.ndarray, derivative : bool = False) -> int:
         return 1 - np.tanh(x) ** 2
     return np.tanh(x)
 
+def cross_entropy(predicted : np.ndarray, actual : np.ndarray, is_softmax : bool, derivative : bool = False) -> float:
+    if is_softmax:
+        if derivative:
+            return -(actual - predicted)
+        else:
+            return -(actual @ np.log(predicted.T + 1e-9))
+    else:
+        if derivative:
+            return -(actual / predicted)
+        else:
+            return -(actual @ np.log(predicted.T + 1e-9))
+
+# Initializations
 def he_initialization(input_size, output_size):
     return np.sqrt(2.0/input_size)
