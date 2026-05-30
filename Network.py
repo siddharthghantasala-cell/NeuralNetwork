@@ -77,10 +77,6 @@ class Layer:
         if not isinstance(self.outputs[1], np.ndarray):
             raise ValueError('The output layer has not been set yet')
 
-        # We differentiate the activation function (should probably be the same across all layers, but I'm just doing it anyway)
-        def d_active(x):
-            return self.activation(x, True)
-
         # To update the weights, we need to derive the weighted input with respect to each weight in
         # order to find how much we need to update the weights by
 
@@ -89,7 +85,7 @@ class Layer:
         # thereby converting the output dimensions of that layer to it's input dimensions which
         # also is this layer's output dimensions allowing us to effectively pull the error from the next
         # layer to this layer and do the Hadamard product
-        error = upstream_gradient * d_active(self.outputs[0])
+        error = self.activation(x=self.outputs[0], upstream_gradient=upstream_gradient, derivative=True)
 
         # error = output x batch_size
 
@@ -99,7 +95,7 @@ class Layer:
         # This creates a rank 1 matrix (when using vectors_ that makes sure that all the weights coming from input 'i' are multiplied
         # by i (after multiplying the calculated error appropriately) and accumulates all gradients of all data
         # points in the batch. While using batch matrices, this happens implicitly with the regular dot product
-        self.dW = error @ self.inputs.T
+        self.dW = error @ self.inputs.T # dim = output_size x input_size
 
         # For now, simply calculate the error
         """
@@ -177,6 +173,7 @@ class Network:
         self.hidden_layer_size = hidden_layer_size
         self.activation_function = activation_function
         self.output_activation = output_activation
+        self.loss_list = []
 
     def forward(self, inputs, batch_size):
         """
@@ -199,7 +196,7 @@ class Network:
         """
         print('<Network> Final output : ', self.output_layer.outputs[1])
 
-    def return_output(self):
+    def return_output(self) -> np.ndarray:
         """
         Returns the final output of the entire network's calculations
         :return: the output layer's outputs
@@ -288,7 +285,7 @@ class Network:
         for layer in reversed(self.network):
             layer.update(learning_rate=learning_rate, batch_size=batch_size)
 
-    def mini_batch_grad_desc(self, learning_rate, data, epochs, labels, batch_size):
+    def mini_batch_grad_desc(self, learning_rate, data, epochs, labels, batch_size, loss):
         """
         A method to run stochastic mini-batch gradient descent on the network by calling the prior
         train method
@@ -334,9 +331,18 @@ class Network:
                 # We need the network's current predictions with a forward pass
                 self.forward(training_batch, min(batch_size, len(data)-batch))
 
-                # dL is the error from the loss function (Currently just MSE)
+                # Get the outputs for the loss and gradient
+                outputs = self.return_output()
+
                 batch_labels = np.stack([labels[index] for index in r_indices[batch:min(batch+batch_size, len(data))]]).T
-                dL = (self.output_layer.outputs[1] - batch_labels)
+
+                # dL is the error from the loss function
+                dL = loss(outputs, batch_labels, derivative=True)
+
+                # Print out the loss so that we have a good idea as to how well the network is doing rn
+                loss_value = loss(outputs, batch_labels, derivative=False).mean()
+                print(f"Loss on batch {batch//batch_size} is {np.round(loss_value, 4)}")
+                self.loss_list.append(loss_value)
 
                 # Do one backwards pass for this datapoint through the whole network to sum up the gradients
                 self.backward(dL, batch_size)
@@ -349,6 +355,8 @@ class Network:
                 # the weights with
                 self.reset_grad()
 
+
+
     def singleton_grad_desc(self, learning_rate, data, epochs, labels):
         self.mini_batch_grad_desc(learning_rate=learning_rate, data=data, epochs=epochs, labels=labels, batch_size=1)
 
@@ -360,6 +368,11 @@ class Network:
         for layer in reversed(self.network):
             layer.reset_grad()
 
+    def plot_loss(self):
+        import matplotlib.pyplot as plt
+        plt.close()
+        plt.plot(self.loss_list)
+        plt.show()
 
     def __repr__(self):
         return f" input ({self.input_size}) | hidden layers ({self.hidden_layer_count}) ({self.hidden_layer_size}) | output layer ({self.output_size})"

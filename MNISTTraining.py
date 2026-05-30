@@ -6,54 +6,13 @@ from MNISTReader import MnistDataloader
 import pickle
 
 def main():
-    # X = [
-    #     np.array([0, 0]),
-    #     np.array([0, 1]),
-    #     np.array([1, 0]),
-    #     np.array([1, 1]),
-    # ]
-    # y = [
-    #     np.array([0]),
-    #     np.array([1]),
-    #     np.array([1]),
-    #     np.array([1]),
-    # ]
-    #
-    # network = Network(
-    #     input_size=2,
-    #     output_size=1,
-    #     hidden_layer_size=0,
-    #     hidden_layer_count=0,
-    #     activation_function=tanh,
-    #     output_activation=tanh
-    # )
-    #
-    # print("training...")
-    # network.train(0.1, X, 10000, y)
-    #
-    # print("\n--------------- testing ---------------\n")
-    #
-    # outputs = []
-    # for entry in X:
-    #     network.forward(entry)
-    #     network.show_output()
-    #     outputs.append(network.return_output())
-    #
-    # print()
-    #
-    # for i in range(len(outputs)):
-    #     if outputs[i] >= 0.5:
-    #         outputs[i] = 1
-    #     else:
-    #         outputs[i] = 0
-    # print(outputs)
     mnist_network = Network(
         input_size=784,
         output_size=10,
-        hidden_layer_size= 256,
+        hidden_layer_size= 100,
         hidden_layer_count= 3,
         activation_function= relu,
-        output_activation= sigmoid,
+        output_activation= softmax,
         initialization=he_initialization,
     )
 
@@ -94,9 +53,10 @@ def main():
     mnist_network.mini_batch_grad_desc(
         learning_rate=0.05,
         data=x_train_aug,
-        epochs=20,
+        epochs=25,
         labels=y_train_aug,
         batch_size=64,
+        loss=cross_entropy
     )
 
     t1 = time.time()
@@ -105,6 +65,23 @@ def main():
     print("elapsed time: ", round(t1 - t0, 2))
 
     pickle.dump(mnist_network, open('mnist_network.p', 'wb'))
+
+    mnist_network.plot_loss()
+
+    print("testing...")
+
+    errors = 0
+
+    mnist_network.plot_loss()
+
+    for i in range(len(x_test)):
+        test = np.array(x_test[i], dtype=np.int64).flatten()
+        test = (test - test.min()) / (test.max() - test.min())
+        mnist_network.forward(test.reshape(-1, 1), batch_size=1)
+        pred = np.argmax(mnist_network.return_output())
+        if pred != y_test[i]:
+            errors += 1
+    print(f"accuracy: {(len(x_test) - errors) / len(x_test):.2%}")
 
 if __name__ == "__main__":
     main()
