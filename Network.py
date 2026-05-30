@@ -17,14 +17,13 @@ class Layer:
         self.input_size = input_size
         self.output_size = output_size
 
-    def forward(self, batch_size):
+    def forward(self):
         """
         Forward pass for 1 layer
-        :param batch_size: The batch size
         :return: Sets outputs to the result of calculating the forward pass, which is the multiplication of the weight matrix and input vectors in that order
         """
         # weights are output x input and the dot product gives output x batch
-        self.outputs[0] = np.dot(self.weights, self.inputs) + self.biases[:, None]
+        self.outputs[0] = (self.weights @ self.inputs) + self.biases[:, None]
         self.outputs[1] = self.activation(self.outputs[0])
 
     def set_inputs(self, inputs):
@@ -92,7 +91,7 @@ class Layer:
         # Accumulate the error
         self.db = error
 
-        # This creates a rank 1 matrix (when using vectors_ that makes sure that all the weights coming from input 'i' are multiplied
+        # This creates a rank 1 matrix when using vectors_ that makes sure that all the weights coming from input 'i' are multiplied
         # by i (after multiplying the calculated error appropriately) and accumulates all gradients of all data
         # points in the batch. While using batch matrices, this happens implicitly with the regular dot product
         self.dW = error @ self.inputs.T # dim = output_size x input_size
@@ -175,26 +174,26 @@ class Network:
         self.output_activation = output_activation
         self.loss_list = []
 
-    def forward(self, inputs, batch_size):
+    def forward(self, inputs):
         """
         Forward pass for the network
         :param inputs: The inputs to be added in the form of a list of numpy arrays
-        :param batch_size: The batch size
         :return: None. It calculates the output of the network with the given inputs
         """
         self.network[0].set_inputs(inputs)
         for i in range(0,len(self.network) - 1):
             # Basically feed forward of the first layer, then put those outputs as in the inputs of the next layer
-            self.network[i].forward(batch_size)
+            self.network[i].forward()
             self.network[i+1].set_inputs(self.network[i].outputs[1])
-        self.output_layer.forward(batch_size)
+        self.output_layer.forward()
 
-    def show_output(self):
+    def show_output(self, rounding):
         """
         Shows the final output of the entire network's calculations
+        :param rounding: How many digits to round down to.
         :return: Prints the output layer's outputs
         """
-        print('<Network> Final output : ', self.output_layer.outputs[1])
+        print('<Network> Final output : ', np.round(self.output_layer.outputs[1], rounding).item())
 
     def return_output(self) -> np.ndarray:
         """
@@ -261,11 +260,10 @@ class Network:
     #             learning_rate=learning_rate
     #         )
 
-    def backward(self, loss_error, batch_size):
+    def backward(self, loss_error):
         """
         A method used to perform a single backwards pass through the whole network by calling each layer's backward() method
         :param loss_error: The error calculated via calculating the gradient on a single datapoint from the output layer
-        :param batch_size: The batch size
         """
         # We need to make sure to calculate the backpropagation gradient BEFORE changing
         # the weights because we need to be learning from the weights that made the wrong prediction
@@ -294,6 +292,7 @@ class Network:
         :param epochs: The number of epochs
         :param labels: The labels of the data
         :param batch_size: The size of the mini-batch
+        :param loss: The loss function
         :return: None
         """
         import random
@@ -329,7 +328,7 @@ class Network:
                 training_batch = np.stack([data[index] for index in r_indices[batch:min(batch+batch_size, len(data))]]).T
 
                 # We need the network's current predictions with a forward pass
-                self.forward(training_batch, min(batch_size, len(data)-batch))
+                self.forward(training_batch)
 
                 # Get the outputs for the loss and gradient
                 outputs = self.return_output()
@@ -345,7 +344,7 @@ class Network:
                 self.loss_list.append(loss_value)
 
                 # Do one backwards pass for this datapoint through the whole network to sum up the gradients
-                self.backward(dL, batch_size)
+                self.backward(dL)
 
                 # Once we're done accumulating the gradient in each layer, we run each layer's update method and update
                 # all the weights with the accumulated gradients
@@ -357,8 +356,8 @@ class Network:
 
 
 
-    def singleton_grad_desc(self, learning_rate, data, epochs, labels):
-        self.mini_batch_grad_desc(learning_rate=learning_rate, data=data, epochs=epochs, labels=labels, batch_size=1)
+    def singleton_grad_desc(self, learning_rate, data, epochs, labels, loss):
+        self.mini_batch_grad_desc(learning_rate=learning_rate, data=data, epochs=epochs, labels=labels, batch_size=1, loss=loss)
 
 
     def reset_grad(self):

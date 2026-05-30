@@ -77,7 +77,7 @@ def main():
     for i in range(len(x_test)):
         test = np.array(x_test[i], dtype=np.int64).flatten()
         test = (test - test.min()) / (test.max() - test.min())
-        mnist_network.forward(test.reshape(-1, 1), batch_size=1)
+        mnist_network.forward(test.reshape(-1, 1))
         pred = np.argmax(mnist_network.return_output())
         if pred != y_test[i]:
             errors += 1

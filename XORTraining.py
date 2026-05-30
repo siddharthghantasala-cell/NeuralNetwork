@@ -2,7 +2,7 @@ import pickle
 
 import numpy as np
 
-from ExternalFunctions import tanh
+from ExternalFunctions import tanh, mse
 from Network import Network
 
 x = np.array([
@@ -34,6 +34,7 @@ xor_network.mini_batch_grad_desc(
     labels=y,
     epochs=2000,
     batch_size=4,
+    loss=mse
 )
 
 pickle.dump(xor_network, open('xor_network.p', 'wb'))
